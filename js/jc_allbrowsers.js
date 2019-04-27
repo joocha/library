@@ -7,12 +7,13 @@
  * @license For open source use: GPLv3
  *          For commercial use: Commercial License
  * @author  John Chavchanidze
- * @version 1.0.1
+ * @version 1.0.2
  *
- * See usage examples at http://jooch.com/examples
+ * See usage examples at http://joocha.com/examples
  */
  
        var EFF=(navigator.appName=='Microsoft Internet Explorer');
+	   var COOKIE_POLICY_ACCEPTANCE=getCookie("cookie_policy_acceptance")
        var jc_userAgent=navigator.userAgent.toLowerCase();
        var jc_appName=navigator.appName.toLowerCase();
 
@@ -495,8 +496,9 @@ if(document.getElementById(obj))obj=document.getElementById(obj);
 //-------------------
 var GlobalEventList={};
 var GlobalEventCounter=0;
-function AddEventOnObject(obj,onevv,fnc)//function(event){return EP_onkeydown(event,nid)}
+function AddEventOnObject(obj,onevv,fnc,uniqalControl)//function(event){return EP_onkeydown(event,nid)}
 {
+ if(!uniqalControl)uniqalControl=false;
  var oo;
  if(typeof obj !== "object")
  {
@@ -505,10 +507,17 @@ function AddEventOnObject(obj,onevv,fnc)//function(event){return EP_onkeydown(ev
 	}catch(e){console.log("AddEventOnObject: "+e);}
  }
  if(!oo)oo=obj;
+ obj=oo;
  
  GlobalEventCounter++;
  if(!obj.id)obj.id="ForEvent"+GlobalEventCounter;
  if(!(obj.id in GlobalEventList))GlobalEventList[obj.id]={};
+ 
+ if(uniqalControl){
+    if(GlobalEventList[obj.id][onevv] && GlobalEventList[obj.id][onevv]!=undefined){
+		RemoveEventOnObject(obj,onevv,GlobalEventList[obj.id][onevv]["function"]);
+	}
+ }
  GlobalEventList[obj.id][onevv]={"object":obj,"position":GlobalEventCounter,"event":onevv,"function":fnc};
  
 try{
@@ -519,16 +528,6 @@ try{
   }catch(e)
   {
 	console.log("AddEventOnObject: "+e);
-     //oo.attachEvent('on'+onevv,fnc);
-	 /*if(!document.getElementById("forAddEventOnObject_LoadingControlElement"))
-	 {
-		obj=document.createElement("div");
-		obj.className="forAddEventOnObject_LoadingControlElement";
-		obj.id="forAddEventOnObject_LoadingControlElement";
-		AddEventOnObject(obj,onevv,fnc);
-		console.log(obj);
-		document.body.appendChild(obj);
-	}else*/
 	{
 		switch(onevv)
 		{
@@ -549,12 +548,21 @@ function RemoveEventOnObject(obj,onevv,fnc)//function(event){return EP_onkeydown
  oo=document.getElementById(obj); 
  }catch(e){}
  if(!oo)oo=obj;
+obj=oo;
 
+ if(!fnc){
+	if(GlobalEventList[obj.id][onevv] && GlobalEventList[obj.id][onevv]!=undefined)
+		RemoveEventOnObject(obj,onevv,GlobalEventList[obj.id][onevv]["function"]);
+ }
+ else 
+ 
 try{
-  if(oo.removeEventListener)
+  if(oo.removeEventListener){
       oo.removeEventListener(onevv,fnc,false);
-  else
+	  }
+  else {
       oo.detachEvent('on'+onevv,fnc);
+	 }
   }catch(e)
   {
      oo.detachEvent('on'+onevv,fnc);
@@ -566,6 +574,22 @@ try{
 function AddEventByString(obj,onevv,fncParam)//function(event){return EP_onkeydown(event,nid)}
 {
    return AddEventOnObject(obj,onevv,function(e){var event=e || window.event;var target=(event.target != null ? event.target : event.srcElement); eval(fncParam);});
+}
+//---------------------------------------------------
+function GetObjectEventList(el){
+	var vid=(((typeof el)=="object") && el.id?el.id:el);
+	if(vid in GlobalEventList)return GlobalEventList[vid];
+return [];	
+}
+//---------------------------------------------------
+function CheckObjectEvent(el,ev){
+	var pointer=GetObjectEventList(el);
+	if(pointer.length<=0)return false;
+	
+	if(ev in pointer){
+		return pointer[ev];
+	}
+	return false;
 }
 //---------------------------------------------------
 var classEvent={
@@ -788,4 +812,28 @@ function winOpen(mthd, url, data, target) {
   form.style.display = 'none';
   document.body.appendChild(form);
   form.submit();
+};
+
+//--------------------------------------------------------
+ var waitUntilLoad = function (fn, obj, interval) {
+    interval = interval || 100;
+
+    var shell = function () {
+            var timer = setInterval(
+                function () {
+                    var check;
+
+                    try { check = (obj.innerHTML!==''); } catch (e) { check = false; }
+
+                    if (check) {
+                        clearInterval(timer);
+                        delete timer;
+                        fn();
+                    }
+                },
+                interval
+            );
+        };
+
+    return shell;
 };
