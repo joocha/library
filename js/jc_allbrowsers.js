@@ -7,7 +7,7 @@
  * @license For open source use: GPLv3
  *          For commercial use: Commercial License
  * @author  John Chavchanidze
- * @version: 1.0.4
+ * @version: 1.0.2
  *
  * See usage examples at http://joocha.com/examples
  */
